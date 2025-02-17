@@ -85,12 +85,12 @@ if(!user.emailVerified){
     }
 
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user._id ,email:user.email},
       process.env.JWT_SECRET as string,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
-    res.status(200).json({ token, userId: user._id });
+    res.status(200).json({ token, userId: user._id,email:user.email });
   } catch (error) {
     next(error);
   }
@@ -114,7 +114,6 @@ export const resetPassword = async (
 
 
 
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     user.password = password;
     await user.save();

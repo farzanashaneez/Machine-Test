@@ -1,54 +1,72 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../model/User';
 import Image from '../model/Image';
+import { ObjectId, Types } from 'mongoose';
 
 
 interface CustomError extends Error {
     statusCode?: number;
   }
 
-export const addImagesToUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    console.log("in adding images======>",req.body)
-    const userId = (req as any).userId;
-    const { imageIds } = req.body;
+  
+  export const addImagesToUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId =req.body.userId;
+      const imageUrls = req.body.uploadedImages?.map((x:any)=>x.url)
+      const titles = req.body.uploadedImages?.map((x:any)=>x.title)
+  
+      if (!imageUrls || !Array.isArray(imageUrls)) {
+        const error = new Error('No images provided') as CustomError;
+        error.statusCode = 400;
+        throw error;
+      }
+  
+      if (!Array.isArray(titles) || titles.length !== imageUrls.length) {
+        const error = new Error('Titles array must match the number of images') as CustomError;
+        error.statusCode = 400;
+        throw error;
+      }
+  
+      // Create Image documents
+      console.log("in controller",userId,titles,imageUrls)
 
-    if (!Array.isArray(imageIds)) {
-      const error = new Error('Invalid input format. Expected an array of image IDs.') as CustomError;
-      error.statusCode = 400;
-      throw error;
+      const createImagePromises = imageUrls.map(async (url, index) => {
+        const image = new Image({
+          userId,
+          title: titles[index],
+          url: url,
+        });
+        return await image.save();
+      });
+  
+      const savedImages = await Promise.all(createImagePromises);
+      const imageIds = savedImages.map(image => image._id);
+  
+      // Update user's imageArray
+      const user = await User.findById(userId);
+      if (!user) {
+        const error = new Error('User not found') as CustomError;
+        error.statusCode = 404;
+        throw error;
+      }
+  
+      user.imageArray = [...user.imageArray, ...imageIds] as Types.ObjectId[];
+      await user.save();
+  
+      res.status(200).json({
+        message: 'Images uploaded and added to user successfully',
+        updatedImageArray: user.imageArray,
+        images: savedImages
+      });
+    } catch (error) {
+      next(error);
     }
-
-    // Verify all images exist and belong to the user
-    const images = await Image.find({ _id: { $in: imageIds }, userId });
-
-    if (images.length !== imageIds.length) {
-      const error = new Error('One or more image IDs are invalid or unauthorized.') as CustomError;
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      const error = new Error('User not found') as CustomError;
-      error.statusCode = 404;
-      throw error;
-    }
-
-    // Add new image IDs to the user's imageArray, maintaining the order
-    user.imageArray = [...user.imageArray,...imageIds];
-    await user.save();
-
-    res.status(200).json({ message: 'Images added to user successfully', updatedImageArray: user.imageArray });
-  } catch (error) {
-    next(error);
-  }
-};
+  };
 
 
 export const getUserImages = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.params.userId;
     const user = await User.findById(userId).populate('imageArray');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -61,8 +79,7 @@ export const getUserImages = async (req: Request, res: Response, next: NextFunct
 
 export const updateImageOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { imageArray } = req.body;
-    const userId = (req as any).userId;
+    const { imageArray,userId } = req.body;
 
     if (!Array.isArray(imageArray)) {
       return res.status(400).json({ message: 'imageArray must be an array of image IDs' });
@@ -88,10 +105,9 @@ export const editImage = async (req: Request, res: Response, next: NextFunction)
   try {
     const { id } = req.params;
     const { title } = req.body;
-    const userId = (req as any).userId;
 
     const image = await Image.findOneAndUpdate(
-      { _id: id, userId },
+      { _id: id},
       { $set: { title } },
       { new: true }
     );
@@ -108,8 +124,7 @@ export const editImage = async (req: Request, res: Response, next: NextFunction)
 
 export const deleteImage = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const userId = (req as any).userId;
+    const { id,userId } = req.params;
 
     const image = await Image.findOneAndDelete({ _id: id, userId });
 

@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import store from "../reduxStore/store";
+import { useDispatch } from "react-redux";
+import { LoggedOut } from "../reduxStore/slices/userSlice";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
@@ -11,6 +13,7 @@ api.interceptors.request.use(
   (config) => {
     const state = store.getState();
     const token = state.appUser?.user?.token;
+    console.log("token",token)
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
@@ -26,14 +29,23 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
+    // const dispatch = useDispatch(); 
+console.log(error)
     if (error.response) {
-      console.error("Response error:", error.response.data);
-      console.error("Status:", error.response.status);
+      const responseData = error.response.data as { message: string };
+
+      if (error.response.status === 401 && responseData.message.toLowerCase().includes('Token is not valid')) {
+        console.error('Invalid token, logging out...');
+
+        store.dispatch(LoggedOut());
+
+      }
     } else if (error.request) {
       console.error("Request error:", error.request);
     } else {
       console.error("Error:", error.message);
     }
+
     return Promise.reject(error);
   }
 );
@@ -64,15 +76,15 @@ export const imageApi = {
       },
     }),
 
-  getUserImages: () => api.get("/images/user"),
+  getUserImages: (userId:string) => api.get(`/images/user/${userId}`),
 
-  reorderImages: (newOrder: { imageId: string; newPosition: number }[]) =>
-    api.put("/images/reorder", { newOrder }),
+  reorderImages: (imageArray:any,userId:string) =>
+    api.put("/images/reorder", { imageArray,userId }),
 
   editImage: (
     imageId: string,
-    updateData: { title?: string; description?: string }
+    updateData: { title?: string; userId?: string }
   ) => api.put(`/images/${imageId}`, updateData),
 
-  deleteImage: (imageId: string) => api.delete(`/images/${imageId}`),
+  deleteImage: (imageId: string,userId:string) => api.delete(`/images/${imageId}/user/${userId}`),
 };

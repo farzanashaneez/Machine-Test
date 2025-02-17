@@ -15,13 +15,14 @@ export const authenticateUser = (req: AuthenticatedRequest, res: Response, next:
   }
 
   const token = authHeader.split(' ')[1];
-
+console.log("token===============",token);
   try {
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is not defined');
     }
-    const decoded = jwt.verify(token, jwtSecret) as { userId: string };
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string ,email:string};
+    console.log("=== decoded===>",decoded)
     req.userId = decoded.userId;
     next();
   } catch (error) {

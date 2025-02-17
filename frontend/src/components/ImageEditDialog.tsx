@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField, CircularProgress } from '@mui/material';
+import { imageApi } from '../sevices/api';
+import { useSelector } from 'react-redux';
+import { RootState } from '../reduxStore/store';
 
 interface Image {
   _id: string;
   title: string;
-  description: string;
   url: string;
 }
 
@@ -19,6 +21,8 @@ const ImageEditDialog: React.FC<ImageEditDialogProps> = ({ open, onClose, image,
   const [editedImage, setEditedImage] = useState<Image | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const userId = useSelector((state: RootState) => state.appUser.user.userId);
+
 
   useEffect(() => {
     if (image) {
@@ -37,9 +41,9 @@ const ImageEditDialog: React.FC<ImageEditDialogProps> = ({ open, onClose, image,
     setError('');
 
     try {
-    //   await axios.put(`/api/images/${editedImage._id}`, editedImage);  // Replace with your API endpoint
-      onEdit();  // Refresh the images after edit
-      onClose(); // Close the dialog
+      await imageApi.editImage(editedImage._id,{title:editedImage.title,userId:userId})  // Replace with your API endpoint
+      onEdit();  
+      onClose(); 
     } catch (err) {
       setError('Failed to save changes.');
       console.error('Edit error:', err);
@@ -63,14 +67,7 @@ const ImageEditDialog: React.FC<ImageEditDialogProps> = ({ open, onClose, image,
               fullWidth
               margin="normal"
             />
-            <TextField
-              label="Image Description"
-              name="description"
-              value={editedImage.description}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-            />
+           
           </>
         )}
         {loading && <CircularProgress />}

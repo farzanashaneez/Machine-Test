@@ -19,9 +19,10 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   },
 });
-const upload = multer({ storage });
+export const upload = multer({ storage });
 
 export const uploadToCloudinary = async (req: Request, res: Response, next: NextFunction) => {
+    console.log("in cloudinary",req.files,req.body)
   if (!req.files || req.files.length === 0) {
     return next(); 
   }
@@ -30,7 +31,7 @@ export const uploadToCloudinary = async (req: Request, res: Response, next: Next
     
     const uploadPromises = (req.files as Express.Multer.File[]).map(async (file, index) => {
       const result = await cloudinary.uploader.upload(file.path, {
-        folder: 'your-folder-name', 
+        folder: 'ImageApp', 
       });
 
       return {
@@ -41,11 +42,10 @@ export const uploadToCloudinary = async (req: Request, res: Response, next: Next
 
     
     const uploadedImages = await Promise.all(uploadPromises);
-
-    // Add uploaded images info to the request body
+console.log(uploadedImages)
     req.body.uploadedImages = uploadedImages;
 
-    next(); // Proceed to the next middleware
+    next(); 
   } catch (error) {
     next(error); // Handle any errors
   }

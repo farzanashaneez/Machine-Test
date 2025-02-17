@@ -12,6 +12,7 @@ import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoutes';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import { ImageAppContextProvider } from './context/ImageAppContext';
+import ErrorPage from './pages/ErrorPage';
 
 function App() {
   const isLoggedIn = useSelector((state: RootState) => state.appUser.isAuthenticated);
@@ -40,6 +41,7 @@ function App() {
               }
             />
             <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="*" element={<ErrorPage />} />
           </Routes>
         </BrowserRouter>
         </ImageAppContextProvider>

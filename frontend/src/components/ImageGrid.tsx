@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Grid } from '@mui/material';
+import { Grid, Card, CardContent, CardMedia, Button } from '@mui/material';
 import { DndContext, DragStartEvent, DragOverlay, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
 import ImageCard, { IImage } from './ImageCard';
 
@@ -16,7 +16,6 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, onDragEnd, onEdit, onDele
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
-  
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
@@ -25,7 +24,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, onDragEnd, onEdit, onDele
 
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <Grid container spacing={2} style={{ padding: '16px' }}>
+      <Grid container spacing={2} padding={2}>
         {images && images.map((image, index) => (
           <DraggableDroppableItem
             key={image?._id}
@@ -43,6 +42,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, onDragEnd, onEdit, onDele
               image={images.find(img => img._id === activeId)!}
               onEdit={() => {}}
               onDelete={() => {}}
+              isDragging={true}
             />
           </div>
         ) : null}
@@ -52,7 +52,12 @@ const ImageGrid: React.FC<ImageGridProps> = ({ images, onDragEnd, onEdit, onDele
 };
 
 const DraggableDroppableItem: React.FC<any> = ({ image, index, onEdit, onDelete }) => {
-  const { attributes, listeners, setNodeRef: setDraggableRef, isDragging } = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDraggableRef,
+    isDragging
+  } = useDraggable({
     id: image?._id,
   });
 
@@ -60,9 +65,8 @@ const DraggableDroppableItem: React.FC<any> = ({ image, index, onEdit, onDelete 
     id: image?._id,
   });
 
-  const setRefs = (el: HTMLElement | null) => {
+  const setDragHandleRef = (el: HTMLElement | null) => {
     setDraggableRef(el);
-    setDroppableRef(el);
   };
 
   return (
@@ -71,18 +75,16 @@ const DraggableDroppableItem: React.FC<any> = ({ image, index, onEdit, onDelete 
       xs={12}
       sm={6}
       md={4}
-      ref={setRefs}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        transition: 'opacity 0.3s ease',
-      }}
-      {...listeners}
-      {...attributes}
+      ref={setDroppableRef}
+      style={{ opacity: isDragging ? 0.5 : 1, transition: 'opacity 0.3s' }}
     >
       <ImageCard
         image={image}
         onEdit={() => onEdit(image)}
         onDelete={() => onDelete(image?._id)}
+        dragHandleRef={setDragHandleRef}
+        dragHandleProps={{ ...listeners, ...attributes }}
+        isDragging={isDragging}
       />
     </Grid>
   );

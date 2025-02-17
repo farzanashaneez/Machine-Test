@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -16,9 +15,11 @@ import {
 } from '@mui/material';
 import { 
   Close as CloseIcon,
-  CloudUpload as CloudUploadIcon 
+  CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
 import { imageApi } from '../sevices/api';
+import { useSelector } from 'react-redux';
+import { RootState } from '../reduxStore/store';
 
 interface ImageUploadDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
   const [imageFiles, setImageFiles] = useState<ImageFile[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const userId = useSelector((state: RootState) => state.appUser.user.userId);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -89,15 +91,14 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
         formData.append(`images`, img.file);
         formData.append(`titles`, img.title);
       });
+      formData.append('userId', userId);
 
-    await imageApi.addImages(formData);
-
+      await imageApi.addImages(formData);
       onUpload();
       onClose();
       
       imageFiles.forEach(img => URL.revokeObjectURL(img.preview));
       setImageFiles([]);
-
     } catch (err) {
       setError('Failed to upload images.');
       console.error('Upload error:', err);
@@ -164,21 +165,16 @@ const ImageUploadDialog: React.FC<ImageUploadDialogProps> = ({
                     height: '100%'
                   }}
                 >
-                  <IconButton
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      right: 4,
-                      top: 4,
-                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.9)'
-                      }
-                    }}
-                    onClick={() => removeImage(index)}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<CloseIcon />}
+                      onClick={() => removeImage(index)}
+                    >
+                      Close
+                    </Button>
+                  </Box>
                   <Box
                     sx={{
                       width: '100%',
